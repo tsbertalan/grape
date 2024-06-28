@@ -6,10 +6,12 @@ Created on Fri Aug 27 15:21:08 2021
 """
 
 import grape
-import algorithms
-from functions import add, sub, mul, pdiv, neg, and_, or_, not_, less_than_or_equal, greater_than_or_equal
+import grape.algorithms as algorithms
+from grape.functions import add, sub, mul, pdiv, neg, and_, or_, not_, less_than_or_equal, greater_than_or_equal
 
-from os import path
+from os import path, makedirs
+HERE = path.dirname(path.abspath(__file__))
+makedirs(path.join(HERE, 'results'), exist_ok=True)
 import pandas as pd
 import numpy as np
 from deap import creator, base, tools
@@ -23,7 +25,7 @@ problem = 'heartDisease'
 def setDataSet(problem, RANDOM_SEED):
     np.random.seed(RANDOM_SEED)
     if problem == 'australian': #66
-        data =  pd.read_csv(r"datasets/australian.dat", sep=" ")    
+        data =  pd.read_csv(path.join(HERE, 'datasets', r"australian.dat"), sep=" ")    
         l = data.shape[0]
         Y = np.zeros([l,], dtype=int)
         for i in range(l):
@@ -61,7 +63,7 @@ def setDataSet(problem, RANDOM_SEED):
     
         column_names = ["buying", "maint", "doors", "persons", "lug_boot", "safety", "class"]
         
-        data = pd.read_csv(r"datasets/car.data", sep=",", header=0, names=column_names)
+        data = pd.read_csv(path.join(HERE, 'datasets', r"car.data"), sep=",", header=0, names=column_names)
         
         for i in range(1727):
             if data['class'].iloc[i] == 'unacc':
@@ -95,14 +97,14 @@ def setDataSet(problem, RANDOM_SEED):
         X_test = np.zeros([372, 4], dtype=float)
         Y_test = np.zeros([372,], dtype=bool)
     
-        data = pd.read_table(r"datasets/banknote_Train.csv", sep=" ")
+        data = pd.read_table(path.join(HERE, 'datasets', r"banknote_Train.csv"), sep=" ")
         for i in range(1000):
             for j in range(4):
                 X_train[i,j] = data['x'+ str(j)].iloc[i]
         for i in range(1000):
             Y_train[i] = data['y'].iloc[i] > 0
             
-        data = pd.read_table(r"datasets/banknote_Test.csv", sep=" ")
+        data = pd.read_table(path.join(HERE, 'datasets', r"banknote_Test.csv"), sep=" ")
         for i in range(372):
             for j in range(4):
                 X_test[i,j] = data['x'+ str(j)].iloc[i]
@@ -120,7 +122,7 @@ def setDataSet(problem, RANDOM_SEED):
         X = np.zeros([4601, 57], dtype=float)
         Y = np.zeros([4601,], dtype=int)
     
-        data = pd.read_table(r"datasets/spambase.csv")
+        data = pd.read_table(path.join(HERE, 'datasets', r"spambase.csv"))
         for i in range(4601):
             for j in range(57):
                 X[i,j] = data['d'+ str(j)].iloc[i]
@@ -135,7 +137,7 @@ def setDataSet(problem, RANDOM_SEED):
         GRAMMAR_FILE = 'spambase.bnf'
     
     if problem == 'heartDisease':
-        data =  pd.read_csv(r"datasets/processed.cleveland.data", sep=",")
+        data =  pd.read_csv(path.join(HERE, 'datasets', r"processed.cleveland.data"), sep=",")
         #There are some data missing on columns d11 and d12, so let's remove the rows
         data = data[data.ca != '?']
         data = data[data.thal != '?']
@@ -161,7 +163,7 @@ def setDataSet(problem, RANDOM_SEED):
             
         GRAMMAR_FILE = 'heartDisease.bnf'
     
-    BNF_GRAMMAR = grape.Grammar(r"grammars/" + GRAMMAR_FILE)
+    BNF_GRAMMAR = grape.Grammar(path.join(HERE, 'grammars', GRAMMAR_FILE))
 
     return X_train, Y_train, X_test, Y_test, BNF_GRAMMAR
 
@@ -349,7 +351,7 @@ for i in range(N_RUNS):
     r = RANDOM_SEED    
     header = REPORT_ITEMS
     
-    with open(r"./results/" + str(r) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
+    with open(path.join(HERE, "results",  str(r) + ".csv"), "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
         writer.writerow(header)
         for value in range(len(max_fitness_values)):

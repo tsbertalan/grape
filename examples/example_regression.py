@@ -4,14 +4,15 @@ Created on Fri Aug 27 15:21:08 2021
 
 @author: allan
 """
-
 import grape
-import algorithms
-from functions import add, sub, mul, pdiv, plog, exp, psqrt
+import grape.algorithms as algorithms
+from grape.functions import add, sub, mul, pdiv, plog, exp, psqrt
 
 import random
 
-from os import path
+from os import path, makedirs
+HERE = path.abspath(path.dirname(__file__))
+makedirs(path.join(HERE, 'results'), exist_ok=True)
 import pandas as pd
 import numpy as np
 from deap import creator, base, tools
@@ -26,7 +27,7 @@ def setDataSet(problem):
         X_train = np.zeros([2,676], dtype=float)
         Y_train = np.zeros([676,], dtype=float)
     
-        data_train = pd.read_table(r"datasets/Pagie1_train.txt")
+        data_train = pd.read_table(path.join(HERE, 'datasets', r"Pagie1_train.txt"))
         for i in range(2):
             for j in range(676):
                 X_train[i,j] = data_train['x'+ str(i)].iloc[j]
@@ -36,7 +37,7 @@ def setDataSet(problem):
         X_test = np.zeros([2,10000], dtype=float)
         Y_test = np.zeros([10000,], dtype=float)
     
-        data_test = pd.read_table(r"datasets/Pagie1_test.txt")
+        data_test = pd.read_table(path.join(HERE, 'datasets', r"Pagie1_test.txt"))
         for i in range(2):
             for j in range(10000):
                 X_test[i,j] = data_test['x'+ str(i)].iloc[j]
@@ -62,7 +63,7 @@ def setDataSet(problem):
         X_train = np.zeros([57,747], dtype=float)
         Y_train = np.zeros([747,], dtype=float)
         
-        data_train = pd.read_table(r"datasets/DowNorm_train.txt")
+        data_train = pd.read_table(path.join(HERE, 'datasets', r"DowNorm_train.txt"))
         for i in range(56):
             for j in range(747):
                   X_train[i,j] = data_train['x'+ str(i+1)].iloc[j]
@@ -72,7 +73,7 @@ def setDataSet(problem):
         X_test = np.zeros([57,319], dtype=float)
         Y_test = np.zeros([319,], dtype=float)
         
-        data_test = pd.read_table(r"datasets/DowNorm_test.txt")
+        data_test = pd.read_table(path.join(HERE, 'datasets', r"DowNorm_test.txt"))
         for i in range(56):
             for j in range(319):
                 X_test[i,j] = data_test['x'+ str(i+1)].iloc[j]
@@ -81,7 +82,7 @@ def setDataSet(problem):
         
         GRAMMAR_FILE = 'Dow.bnf'
         
-    BNF_GRAMMAR = grape.Grammar(r"grammars/" + GRAMMAR_FILE)
+    BNF_GRAMMAR = grape.Grammar(path.join(HERE, "grammars", GRAMMAR_FILE))
     
     return X_train, Y_train, X_test, Y_test, BNF_GRAMMAR
 
@@ -269,7 +270,7 @@ for i in range(N_RUNS):
     
     header = REPORT_ITEMS
     
-    with open(r"./results/" + str(r) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
+    with open(path.join(HERE, 'results', str(r) + ".csv"), "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
         writer.writerow(header)
         for value in range(len(max_fitness_values)):

@@ -53,6 +53,9 @@ def sub(a, b):
 def mul(a, b):
     return np.multiply(a,b)
 
+def neg(a):
+    return -a
+
 def psqrt(a):
     return np.sqrt(abs(a))
 
@@ -64,6 +67,9 @@ def min_(a,b):
 
 def plog(a):
     return np.log(1.0 + np.abs(a))
+
+def exp(a):
+    return np.exp(a)
 
 def not_(a):
     return np.logical_not(a)

@@ -6,10 +6,12 @@ Created on Fri Aug 27 15:21:08 2021
 """
 
 import grape
-import algorithms
-from functions import not_, and_, or_, nand_, nor_
+import grape.algorithms as algorithms
+from grape.functions import not_, and_, or_, nand_, nor_
 
-from os import path
+from os import path, makedirs
+HERE = path.abspath(path.dirname(__file__))
+makedirs(path.join(HERE, 'results'), exist_ok=True)
 import pandas as pd
 import numpy as np
 from deap import creator, base, tools
@@ -22,7 +24,7 @@ if problem == 'parity3':
     X_train = np.zeros([3,8], dtype=bool)
     Y_train = np.zeros([8,], dtype=bool)
 
-    data = pd.read_table(r"datasets/parity3.csv")
+    data = pd.read_table(path.join(HERE, 'datasets', r"parity3.csv"))
     for i in range(3):
         for j in range(8):
             X_train[i,j] = data['d'+ str(i)].iloc[j]
@@ -35,7 +37,7 @@ elif problem == 'parity4':
     X_train = np.zeros([4,16], dtype=bool)
     Y_train = np.zeros([16,], dtype=bool)
 
-    data = pd.read_table(r"datasets/parity4.csv")
+    data = pd.read_table(path.join(HERE, 'datasets', r"parity4.csv"))
     for i in range(4):
         for j in range(16):
             X_train[i,j] = data['d'+ str(i)].iloc[j]
@@ -48,7 +50,7 @@ elif problem == 'parity5':
     X_train = np.zeros([5,32], dtype=bool)
     Y_train = np.zeros([32,], dtype=bool)
 
-    data = pd.read_table(r"datasets/parity5.csv")
+    data = pd.read_table(path.join(HERE, 'datasets', r"parity5.csv"))
     for i in range(5):
         for j in range(32):
             X_train[i,j] = data['d'+ str(i)].iloc[j]
@@ -57,7 +59,7 @@ elif problem == 'parity5':
         
     GRAMMAR_FILE = 'parity5.bnf'
 
-BNF_GRAMMAR = grape.Grammar(r"grammars/" + GRAMMAR_FILE)
+BNF_GRAMMAR = grape.Grammar(path.join(HERE, 'grammars', GRAMMAR_FILE))
 
 def mae(y, yhat):
     """
@@ -248,7 +250,7 @@ for i in range(N_RUNS):
     r = RANDOM_SEED
     
     header = REPORT_ITEMS
-    with open("results/" + str(r) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
+    with open(path.join(HERE, 'results', str(r) + ".csv"), "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
         writer.writerow(header)
         for value in range(len(max_fitness_values)):
