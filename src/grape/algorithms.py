@@ -61,7 +61,47 @@ def varAnd(population, toolbox, cxpb, mutpb,
 
 class hofWarning(UserWarning):
     pass
-    
+
+import os
+HERE = os.path.dirname(os.path.abspath(__file__))
+CWD = os.getcwd()
+
+def individual_to_modelica(ind):
+    out = ind.phenotype.replace('" "', '').replace('\\n', '\n')
+    if out.startswith('"'):
+        out = out[1:]
+    if out.endswith('"'):
+        out = out[:-1]
+    return out
+
+def save_best_individual(halloffame):
+    # save_dir = CWD
+    # Instead, find the same dir as the top-level script being run.
+    import inspect
+    frame = inspect.currentframe()
+    while frame.f_back:
+        nextf = frame.f_back
+        filename = inspect.getfile(nextf)
+        if 'vscode-server' in filename:
+            break
+        frame = frame.f_back
+    save_dir = os.path.dirname(inspect.getfile(frame))
+    if not os.path.exists(save_dir):
+        save_dir = CWD
+
+    try:
+        best = halloffame.items[0]
+        code = individual_to_modelica(best)
+        with open(os.path.join(save_dir, 'best_individual.mo'), 'w') as f:
+            f.write(code)
+        import json
+        with open(os.path.join(save_dir, 'best_individual_genome.json'), 'w') as f:
+            # f.write(json.dumps(best.genome))
+            # Wrap at 80 characters.
+            f.write(json.dumps(best.genome, indent=4))
+    except Exception as e:
+        print("Could not save best individual to file: ", e)
+
 def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size, 
                 bnf_grammar, codon_size, max_tree_depth, 
                 max_genome_length=None,
