@@ -109,7 +109,10 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
                 report_items=None,
                 genome_representation='list',
                 stats=None, halloffame=None, 
-                verbose=__debug__):
+                verbose=__debug__,
+                OffspringPbar=lambda x: x,
+                GenPbar=lambda x: x,
+                ):
     """This algorithm reproduce the simplest evolutionary algorithm as
     presented in chapter 7 of [Back2000]_, with some adaptations to run GE
     on GRAPE.
@@ -189,7 +192,7 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
     behavioural_diversity = len(unique_behaviours)/len(population) if 'behavioural_diversity' in report_items else 0
 
     # Update the hall of fame with the generated individuals
-    if halloffame is not None:
+    if halloffame is not None and len(valid) > 0:
         halloffame.update(valid)
         best_ind_length = len(halloffame.items[0].genome) 
         best_ind_nodes = halloffame.items[0].nodes
@@ -221,38 +224,38 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
     record = stats.compile(population) if stats else {}
     if points_test: 
         logbook.record(gen=0, invalid=invalid, **record, 
-                       fitness_test=fitness_test,
-                       best_ind_length=best_ind_length, avg_length=avg_length, 
-                       best_ind_nodes=best_ind_nodes,
-                       avg_nodes=avg_nodes,
-                       best_ind_depth=best_ind_depth,
-                       avg_depth=avg_depth,
-                       avg_used_codons=avg_used_codons,
-                       best_ind_used_codons=best_ind_used_codons,
-                       behavioural_diversity=behavioural_diversity,
-                       structural_diversity=structural_diversity,
-                       fitness_diversity=fitness_diversity,
-                       selection_time=selection_time, 
-                       generation_time=generation_time)
+                    fitness_test=fitness_test,
+                    best_ind_length=best_ind_length, avg_length=avg_length, 
+                    best_ind_nodes=best_ind_nodes,
+                    avg_nodes=avg_nodes,
+                    best_ind_depth=best_ind_depth,
+                    avg_depth=avg_depth,
+                    avg_used_codons=avg_used_codons,
+                    best_ind_used_codons=best_ind_used_codons,
+                    behavioural_diversity=behavioural_diversity,
+                    structural_diversity=structural_diversity,
+                    fitness_diversity=fitness_diversity,
+                    selection_time=selection_time, 
+                    generation_time=generation_time)
     else:
         logbook.record(gen=0, invalid=invalid, **record, 
-                       best_ind_length=best_ind_length, avg_length=avg_length, 
-                       best_ind_nodes=best_ind_nodes,
-                       avg_nodes=avg_nodes,
-                       best_ind_depth=best_ind_depth,
-                       avg_depth=avg_depth,
-                       avg_used_codons=avg_used_codons,
-                       best_ind_used_codons=best_ind_used_codons,
-                       behavioural_diversity=behavioural_diversity,
-                       structural_diversity=structural_diversity,
-                       fitness_diversity=fitness_diversity,
-                       selection_time=selection_time, 
-                       generation_time=generation_time)
+                    best_ind_length=best_ind_length, avg_length=avg_length, 
+                    best_ind_nodes=best_ind_nodes,
+                    avg_nodes=avg_nodes,
+                    best_ind_depth=best_ind_depth,
+                    avg_depth=avg_depth,
+                    avg_used_codons=avg_used_codons,
+                    best_ind_used_codons=best_ind_used_codons,
+                    behavioural_diversity=behavioural_diversity,
+                    structural_diversity=structural_diversity,
+                    fitness_diversity=fitness_diversity,
+                    selection_time=selection_time, 
+                    generation_time=generation_time)
     if verbose:
         print(logbook.stream)
 
     # Begin the generational process
-    for gen in range(logbook.select("gen")[-1]+1, ngen + 1):
+    for gen in GenPbar(range(logbook.select("gen")[-1]+1, ngen + 1)):
         start_gen = time.time()    
     
         # Select the next generation individuals
@@ -267,7 +270,7 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
                            max_genome_length)
 
         # Evaluate the individuals with an invalid fitness
-        for ind in offspring:
+        for ind in OffspringPbar(offspring):
             if not ind.fitness.valid:
                 ind.fitness.values = toolbox.evaluate(ind, points_train)
                 
@@ -313,6 +316,7 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
             best_ind_nodes = halloffame.items[0].nodes
             best_ind_depth = halloffame.items[0].depth
             best_ind_used_codons = halloffame.items[0].used_codons
+            save_best_individual(halloffame)
             if not verbose:
                 print("gen =", gen, ", Best fitness =", halloffame.items[0].fitness.values, ", Number of invalids =", invalid)
             if points_test:
