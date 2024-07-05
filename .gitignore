@@ -1,3 +1,4 @@
 examples/results/
 **.pyc
 **__pycache__**
+.vscode
