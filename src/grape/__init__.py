@@ -107,19 +107,23 @@ class Grammar(object):
         part_PR_depth_to_terminate = list() #min depth for each non-terminal or terminal to terminate
         isolated_non_terminal = list() #None, if the respective position has a terminal
         #Separating the non-terminals within the same production rule
+        # For each nonterminal on the left of a rule ...
         for i in range(len(self.production_rules)):
             part_PR_depth_to_terminate.append( list() )
             isolated_non_terminal.append( list() )
+            # For each potential production on the right ...
             for j in range(len(self.production_rules[i])):
                 part_PR_depth_to_terminate[i].append( list() )
                 isolated_non_terminal[i].append( list() )
-                if self.production_rules[i][j][1] == 'terminal':
+                # [i][j]... are production|terminality|arity|index|recursivness|part_PR_depth_to_terminate
+                production, terminality, arity, index, recursive = self.production_rules[i][j][:5]
+                if terminality == 'terminal':
                     isolated_non_terminal[i][j].append(None)
                     part_PR_depth_to_terminate[i][j] = 1
                     if not NT_depth_to_terminate[i]:
                         NT_depth_to_terminate[i] = 1
                 else:
-                    for k in range(self.production_rules[i][j][2]): #arity
+                    for k in range(arity):
                         part_PR_depth_to_terminate[i][j].append( list() )
                         #term = re.findall(r"\<(\w+)\>",self.production_rules[i][j][0])[k]
                         term = re.findall(r"\<([\(\)\w,-.]+)\>",self.production_rules[i][j][0])[k]
@@ -406,7 +410,11 @@ def random_initialisation(ind_class, pop_size, bnf_grammar,
             return population
         else:
             raise ValueError("Unkonwn genome representation")
-    
+
+class MaxDepthError(RuntimeError):
+
+    pass
+
 def sensible_initialisation(ind_class, pop_size, bnf_grammar, min_init_depth, 
                             max_init_depth, codon_size, codon_consumption,
                             genome_representation):
@@ -430,61 +438,80 @@ def sensible_initialisation(ind_class, pop_size, bnf_grammar, min_init_depth,
         for i in range(n_sets_grow):
             max_init_depth_ = min_init_depth + i
             for j in range(set_size):
-                remainders = [] #it will register the choices
-                possible_choices = [] #it will register the respective possible choices
-    
-                phenotype = bnf_grammar.start_rule
-                remaining_NTs = ['<' + term + '>' for term in re.findall(r"\<([\(\)\w,-.]+)\>",phenotype)] #
-                depths = [1]*len(remaining_NTs) #it keeps the depth of each branch
-                idx_branch = 0 #index of the current branch being grown
-                while len(remaining_NTs) != 0:
-                    idx_NT = bnf_grammar.non_terminals.index(remaining_NTs[0])
-                    total_options = [PR for PR in bnf_grammar.production_rules[idx_NT]]
-                    actual_options = [PR for PR in bnf_grammar.production_rules[idx_NT] if PR[5] + depths[idx_branch] <= max_init_depth_]
-                    Ch = random.choice(actual_options)
-                    phenotype = phenotype.replace(remaining_NTs[0], Ch[0], 1)
-                    depths[idx_branch] += 1
-                    if codon_consumption == 'eager':
-                        remainders.append(Ch[3])
-                        possible_choices.append(len(total_options))
-                    elif codon_consumption == 'lazy':
-                        if len(total_options) > 1:
-                            remainders.append(Ch[3])
-                            possible_choices.append(len(total_options))
-                    
-                    if Ch[2] > 1:
-                        if idx_branch == 0:
-                            depths = [depths[idx_branch],]*Ch[2] + depths[idx_branch+1:]
-                        else:
-                            depths = depths[0:idx_branch] + [depths[idx_branch],]*Ch[2] + depths[idx_branch+1:]
-                    if Ch[1] == 'terminal':
-                        idx_branch += 1
-                    
-                    remaining_NTs = ['<' + term + '>' for term in re.findall(r"\<([\(\)\w,-.]+)\>",phenotype)]
-                
-                #Generate the genome
-                genome = []
-                if codon_consumption == 'eager' or codon_consumption == 'lazy':
-                    for k in range(len(remainders)):
-                        codon = (random.randint(0,1e10) % math.floor(((codon_size + 1) / possible_choices[k])) * possible_choices[k]) + remainders[k]
-                        genome.append(codon)
-                else:
-                    raise ValueError("Unknown mapper")
-                    
-                #Include a tail with 50% of the genome's size
-                size_tail = max(int(0.5*len(genome)), 1) #Tail must have at least one codon. Otherwise, in the lazy approach, when we have the last PR with just a single option, the mapping procces will not terminate.
-                for j in range(size_tail):
-                    genome.append(random.randint(0,codon_size))
-                    
-                #Initialise the individual and include in the population
-                ind = ind_class(genome, bnf_grammar, max_init_depth_, codon_consumption)
-                
-                #Check if the individual was mapped correctly
-                if remainders != ind.structure or phenotype != ind.phenotype or max(depths) != ind.depth:
-                    raise Exception('error in the mapping')
-                    
-                population.append(ind)    
+                MAX_ATTEMPTS = 100
+                num_attempted = 0
+                while True:
+                    try:
+                        remainders = [] #it will register the choices
+                        possible_choices = [] #it will register the respective possible choices
             
+                        phenotype = bnf_grammar.start_rule
+                        remaining_NTs = ['<' + term + '>' for term in re.findall(r"\<([\(\)\w,-.]+)\>",phenotype)] #
+                        depths = [1]*len(remaining_NTs) #it keeps the depth of each branch
+                        idx_branch = 0 #index of the current branch being grown
+                        while len(remaining_NTs) != 0:
+                            idx_NT = bnf_grammar.non_terminals.index(remaining_NTs[0])
+                            total_options = [PR for PR in bnf_grammar.production_rules[idx_NT]]
+                            # Fields in PR are production|terminality|arity|index|recursivness|part_PR_depth_to_terminate
+                            # part_PR_depth_to_terminate is "min depth for each non-terminal or terminal to terminate"
+                            actual_options = [
+                                PR for PR in bnf_grammar.production_rules[idx_NT]
+                                if PR[5] + depths[idx_branch] <= max_init_depth_
+                            ]
+                            if len(actual_options) == 0:
+                                raise MaxDepthError(f'At depth {depths[idx_branch]}, ran out of productions for {remaining_NTs[0]}.')
+                            Ch = random.choice(actual_options)
+                            phenotype = phenotype.replace(remaining_NTs[0], Ch[0], 1)
+                            depths[idx_branch] += 1
+                            if codon_consumption == 'eager':
+                                remainders.append(Ch[3])
+                                possible_choices.append(len(total_options))
+                            elif codon_consumption == 'lazy':
+                                if len(total_options) > 1:
+                                    remainders.append(Ch[3])
+                                    possible_choices.append(len(total_options))
+                            
+                            if Ch[2] > 1:
+                                if idx_branch == 0:
+                                    depths = [depths[idx_branch],]*Ch[2] + depths[idx_branch+1:]
+                                else:
+                                    depths = depths[0:idx_branch] + [depths[idx_branch],]*Ch[2] + depths[idx_branch+1:]
+                            if Ch[1] == 'terminal':
+                                idx_branch += 1
+                            
+                            remaining_NTs = ['<' + term + '>' for term in re.findall(r"\<([\(\)\w,-.]+)\>",phenotype)]
+                        
+                        #Generate the genome
+                        genome = []
+                        if codon_consumption == 'eager' or codon_consumption == 'lazy':
+                            for k in range(len(remainders)):
+                                codon = (random.randint(0,1e10) % math.floor(((codon_size + 1) / possible_choices[k])) * possible_choices[k]) + remainders[k]
+                                genome.append(codon)
+                        else:
+                            raise ValueError("Unknown mapper")
+                            
+                        #Include a tail with 50% of the genome's size
+                        size_tail = max(int(0.5*len(genome)), 1) #Tail must have at least one codon. Otherwise, in the lazy approach, when we have the last PR with just a single option, the mapping procces will not terminate.
+                        for j in range(size_tail):
+                            genome.append(random.randint(0,codon_size))
+                            
+                        #Initialise the individual and include in the population
+                        ind = ind_class(genome, bnf_grammar, max_init_depth_, codon_consumption)
+                        
+                        #Check if the individual was mapped correctly
+                        if remainders != ind.structure or phenotype != ind.phenotype or max(depths) != ind.depth:
+                            raise Exception('error in the mapping')
+                    
+                        population.append(ind)    
+                        
+                        break
+
+                    except MaxDepthError as e:
+                        num_attempted += 1
+                        if num_attempted >= MAX_ATTEMPTS:
+                            raise MaxDepthError(f'Failed to generate individual after {MAX_ATTEMPTS} attempts: {e}')
+                        continue
+
         for i in range(n_full):
             remainders = [] #it will register the choices
             possible_choices = [] #it will register the respective possible choices
@@ -498,6 +525,8 @@ def sensible_initialisation(ind_class, pop_size, bnf_grammar, min_init_depth,
                 idx_NT = bnf_grammar.non_terminals.index(remaining_NTs[0])
                 total_options = [PR for PR in bnf_grammar.production_rules[idx_NT]]
                 actual_options = [PR for PR in bnf_grammar.production_rules[idx_NT] if PR[5] + depths[idx_branch] <= max_init_depth]
+                if len(actual_options) == 0:
+                    raise MaxDepthError(f'At depth {depths[idx_branch]}, ran out of productions for {remaining_NTs[0]}.')
                 recursive_options = [PR for PR in actual_options if PR[4]]
                 if len(recursive_options) > 0:
                     Ch = random.choice(recursive_options)
