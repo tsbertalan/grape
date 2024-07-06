@@ -52,6 +52,13 @@ class Grammar(object):
         #Reading the file
         with open(file_address, "r") as text_file:
             bnf_grammar = text_file.read()
+
+        # Drop comments -- lines that start with //.
+        bnf_grammar = '\n'.join([
+            line for line in bnf_grammar.split('\n')
+            if not line.strip().startswith('//')
+        ])
+
         #Getting rid of all the duplicate spaces
         bnf_grammar = re.sub(r"\s+", " ", bnf_grammar)
 
