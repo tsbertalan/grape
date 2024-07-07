@@ -21,6 +21,9 @@ import warnings
 
 from deap import tools
 
+import logging
+logger = logging.getLogger(__name__)
+
 def varAnd(population, toolbox, cxpb, mutpb,
            bnf_grammar, codon_size, max_tree_depth, codon_consumption,
            genome_representation, max_genome_length):
@@ -82,7 +85,11 @@ def save_best_individual(halloffame):
     while frame.f_back:
         nextf = frame.f_back
         filename = inspect.getfile(nextf)
-        if 'vscode-server' in filename:
+        if (not filename.endswith('.py')) or any(s in filename for s in 
+               ('vscode-server',
+                'lib/python',
+                'lib\\python',
+               )):
             break
         frame = frame.f_back
     save_dir = os.path.dirname(inspect.getfile(frame))
@@ -99,8 +106,9 @@ def save_best_individual(halloffame):
             # f.write(json.dumps(best.genome))
             # Wrap at 80 characters.
             f.write(json.dumps(best.genome, indent=4))
+        logger.info(f"Best individual saved in {save_dir+os.path.sep}.")
     except Exception as e:
-        print("Could not save best individual to file: ", e)
+        logger.warning("Could not save best individual to file: ", e)
 
 def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size, 
                 bnf_grammar, codon_size, max_tree_depth, 
@@ -112,6 +120,7 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
                 verbose=__debug__,
                 OffspringPbar=lambda x: x,
                 GenPbar=lambda x: x,
+                callbacks_each_gen=(),
                 ):
     """This algorithm reproduce the simplest evolutionary algorithm as
     presented in chapter 7 of [Back2000]_, with some adaptations to run GE
