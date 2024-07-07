@@ -106,7 +106,7 @@ def save_best_individual(halloffame):
             # f.write(json.dumps(best.genome))
             # Wrap at 80 characters.
             f.write(json.dumps(best.genome, indent=4))
-        logger.info(f"Best individual saved in {save_dir+os.path.sep}.")
+        logger.debug(f"Best individual saved in {save_dir+os.path.sep}.")
     except Exception as e:
         logger.warning("Could not save best individual to file: ", e)
 
@@ -207,8 +207,8 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
         best_ind_nodes = halloffame.items[0].nodes
         best_ind_depth = halloffame.items[0].depth
         best_ind_used_codons = halloffame.items[0].used_codons
-        if not verbose:
-            print("gen =", 0, ", Best fitness =", halloffame.items[0].fitness.values)
+        #if not verbose:
+        #    print("gen =", 0, ", Best fitness =", halloffame.items[0].fitness.values)
     
     length = [len(ind.genome) for ind in valid]
     avg_length = sum(length)/len(length)
@@ -328,8 +328,8 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
             best_ind_depth = halloffame.items[0].depth
             best_ind_used_codons = halloffame.items[0].used_codons
             save_best_individual(halloffame)
-            if not verbose:
-                print("gen =", gen, ", Best fitness =", halloffame.items[0].fitness.values, ", Number of invalids =", invalid)
+            #if not verbose:
+            #    print("gen =", gen, ", Best fitness =", halloffame.items[0].fitness.values, ", Number of invalids =", invalid)
             if points_test:
                 if gen < ngen:
                     fitness_test = np.NaN
