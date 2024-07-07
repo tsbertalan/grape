@@ -265,6 +265,8 @@ def ge_eaSimpleWithElitism(population, toolbox, cxpb, mutpb, ngen, elite_size,
 
     # Begin the generational process
     for gen in GenPbar(range(logbook.select("gen")[-1]+1, ngen + 1)):
+        for cb in callbacks_each_gen:
+            cb(gen, population, logbook)
         start_gen = time.time()    
     
         # Select the next generation individuals
