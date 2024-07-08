@@ -11,13 +11,14 @@ from operator import attrgetter
 import numpy as np
 import random
 import copy
+from typing import List
 
 class Individual(object):
     """
     A GE individual.
     """
 
-    def __init__(self, genome, grammar, max_depth, codon_consumption):
+    def __init__(self, genome: List[int], grammar: 'Grammar', max_depth: int, codon_consumption: str):
         """
         """
         
@@ -358,7 +359,8 @@ def mapper_lazy(genome, grammar, max_depth):
             structure.append(index_production_chosen)
             idx_genome += 1
         
-        phenotype = phenotype.replace(next_NT, grammar.production_rules[NT_index][index_production_chosen][0], 1)
+        production, terminality, arity, index, recursive, _part_PR_depth_to_terminate = grammar.production_rules[NT_index][index_production_chosen][:6]
+        phenotype = phenotype.replace(next_NT, production, 1)
         list_depth[idx_depth] += 1
         if list_depth[idx_depth] > max_depth:
             break
