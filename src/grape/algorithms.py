@@ -70,11 +70,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CWD = os.getcwd()
 
 def individual_to_modelica(ind):
-    out = ind.phenotype.replace('" "', '').replace('\\n', '\n')
-    if out.startswith('"'):
-        out = out[1:]
-    if out.endswith('"'):
-        out = out[:-1]
+    out = ind.phenotype
+    out = out.replace('\\n', '\n')
+    out = out.replace('\\t', '    ')
+    assert not out.startswith('"')
+    assert not out.endswith('"')
     return out
 
 def save_best_individual(halloffame):
