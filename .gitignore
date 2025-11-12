@@ -2,3 +2,4 @@ examples/results/
 **.pyc
 **__pycache__**
 .vscode
+grape.egg-info
