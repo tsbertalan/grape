@@ -24,8 +24,9 @@ setup(
     packages=find_packages(where='src'),
     python_requires='>=3.7',
     install_requires=[
-        'deap',
-        'numpy',
+        # commented out for offline install.
+        # 'deap',
+        # 'numpy',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
